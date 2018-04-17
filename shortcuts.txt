@@ -1,0 +1,23 @@
+Start Spark===============================
+$SPARK_HOME/sbin/start-all.sh 
+
+Stop Spark================================
+$SPARK_HOME/sbin/stop-all.sh 
+
+Running Application=======================
+$SPARK_HOME/bin/spark-submit –class <your Class> --deploy-mode cluster –supervise <yourJar>
+
+Run HDFS and Yarn=========================
+$HADOOP_HOME/sbin/start-dfs.sh
+$HADOOP_HOME/sbin/start-yarn.sh
+
+Stop HDFS and Yarn========================
+$HADOOP_HOME/sbin/stop-dfs.sh
+$HADOOP_HOME/sbin/stop-yarn.sh
+
+Website to access websites in CSU=========
+https://secure.colostate.edu
+
+Browse
+http://santa-fe.cs.colostate.edu:48801 for HDFS
+http://santa-fe.cs.colostate.edu:46626 for Spark 
