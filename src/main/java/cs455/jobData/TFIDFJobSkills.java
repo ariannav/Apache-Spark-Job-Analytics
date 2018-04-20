@@ -29,7 +29,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.*;
 
-public class JobSkills {
+public class TFIDFJobSkills {
   public static void main(String[] args) {
     SparkSession spark = SparkSession
         .builder()
