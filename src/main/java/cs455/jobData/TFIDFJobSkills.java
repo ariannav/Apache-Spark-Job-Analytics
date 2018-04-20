@@ -1,4 +1,4 @@
-package cs455.jobData; 
+package cs455.jobData;
 
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -90,7 +90,7 @@ public class TFIDFJobSkills {
        }
        return values.iterator();
    });
-    
+
     JavaPairRDD<String, Double> removedDuplicates = features.mapToPair(
         new PairFunction<Tuple2<String, Double>, String, Double>(){
             @Override
@@ -111,26 +111,26 @@ public class TFIDFJobSkills {
    JavaPairRDD<String, Tuple2<Double, Double>> temp1 = removedDuplicates.mapValues(value -> new Tuple2<Double, Double>(value,new Double(1.0)));
    JavaPairRDD<String, Tuple2<Double, Double>> temp2 = temp1.reduceByKey((tuple1,tuple2) ->  new Tuple2<Double, Double>(tuple1._1 + tuple2._1, tuple1._2 + tuple2._2));
    JavaPairRDD<String, Double> aggregated = temp2.mapToPair(getAverageByKey);
-    
-    JavaPairRDD<Double, String> lastRDD = 
+
+    JavaPairRDD<Double, String> lastRDD =
         aggregated.mapToPair(new PairFunction<Tuple2<String, Double>, Double, String>(){
             @Override
             public Tuple2<Double, String> call(Tuple2<String, Double> item) throws Exception {
                 return item.swap();
             }
         });
-        
-        
-    ArrayList<String> csList = new CSList(); 
-    
+
+
+    ArrayList<String> csList = new CSList().getCSList();
+
     JavaPairRDD<Double, String> finalRDD = lastRDD.filter( line -> {
         if(csList.contains(line._2.toLowerCase())){
-            return true; 
+            return true;
         }
-        return false; 
-    }); 
-    
-    finalRDD.sortByKey().saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output");
+        return false;
+    });
+
+    finalRDD.sortByKey().saveAsTextFile("hdfs://santa-fe:48800/TP/output/");
 
     spark.stop();
   }
