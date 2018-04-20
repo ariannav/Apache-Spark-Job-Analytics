@@ -1,3 +1,5 @@
+package cs455.jobData; 
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +46,6 @@ public class TFIDFJobSkills {
 	Dataset<Row> jobsDataSet = session.read().json(jsonFiles);
 	Dataset<Row> reducedDataSet =
         jobsDataSet.drop("positionPeriod").drop("hiringOrganization").drop("normalizedTitle").drop("baseSalary").drop("jobLocation").drop("dateExpires").drop("employmentType").drop("id").drop("incentiveCompensation").drop("jobBenefits").drop("numberOfOpenings").drop("salaryCurrency").drop("specialCommitments").drop("title").drop("url").drop("veteranCommitment").drop("workHours");
-    //reducedDataSet.show();
-    //reducedDataSet.printSchema();
     Dataset<Row> ocDataSet = reducedDataSet.withColumn("occupationCat", concat_ws(" ", col("occupationalCategory")));
     Dataset<Row> csDataSet = ocDataSet.filter(col("occupationCat").contains("15-11"));
     Dataset<Row> skillsDataSet = csDataSet.select("skills").filter(size(col("skills")).gt(0));
@@ -53,7 +53,6 @@ public class TFIDFJobSkills {
     Dataset<Row> finalDataSet = sentences.select("sentence");
 
     JavaRDD<Row> rdd1 = finalDataSet.rdd().toJavaRDD();
-
     JavaRDD<Row> rdd = rdd1.repartition(1);
 
     StructType schema = new StructType(new StructField[]{
@@ -96,7 +95,7 @@ public class TFIDFJobSkills {
         new PairFunction<Tuple2<String, Double>, String, Double>(){
             @Override
             public Tuple2<String, Double> call(Tuple2<String, Double> tuple){
-                return new Tuple2<>(tuple._1().replaceAll(",.:", ""), tuple._2());
+                return new Tuple2<>(tuple._1().replaceAll("[(,:;.)]", ""), tuple._2());
             }
         }
    );
@@ -120,9 +119,20 @@ public class TFIDFJobSkills {
                 return item.swap();
             }
         });
+        
+        
+    ArrayList<String> csList = new CSList(); 
     
-    lastRDD.sortByKey().saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output");
+    JavaPairRDD<Double, String> finalRDD = lastRDD.filter( line -> {
+        if(csList.contains(line._2.toLowerCase())){
+            return true; 
+        }
+        return false; 
+    }); 
+    
+    finalRDD.sortByKey().saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output");
 
     spark.stop();
   }
 }
+
