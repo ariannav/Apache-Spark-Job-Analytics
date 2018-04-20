@@ -1,3 +1,5 @@
+//Colton's Code :)
+
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -20,6 +22,9 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.*;
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.size;
+import org.apache.spark.sql.Column;
 
 public class JobSkills{
     
@@ -33,11 +38,10 @@ public class JobSkills{
             jobsDataSet.drop("positionPeriod").drop("hiringOrganization").drop("normalizedTitle").drop("baseSalary").drop("jobLocation").drop("dateExpires").drop("employmentType").drop("id").drop("incentiveCompensation").drop("jobBenefits").drop("numberOfOpenings").drop("salaryCurrency").drop("specialCommitments").drop("title").drop("url").drop("veteranCommitment").drop("workHours");
         reducedDataSet.show();
         reducedDataSet.printSchema();
-        Dataset<Row> skillsDataSet = reducedDataSet.select("skills");
+        Dataset<Row> skillsDataSet = reducedDataSet.select("skills").filter(size(col("skills")).gt(0));
         skillsDataSet.show();
-//         reducedDataSet.createOrReplaceTempView("jobs");
-//         reducedDataSet.sql("SELECT skills FROM jobs WHERE skills IS NOT NULL").show();
-        //JavaRDD<Row> rdd = reducedDataSet.rdd().toJavaRDD();
-        //rdd.saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output/output");
+        
+        JavaRDD<Row> rdd = skillsDataSet.rdd().toJavaRDD();
+        rdd.saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output/output");
     }
 }
