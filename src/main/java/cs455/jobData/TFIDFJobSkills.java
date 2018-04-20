@@ -1,5 +1,3 @@
-package cs455.jobData;
-
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +16,6 @@ import org.apache.spark.sql.types.StructType;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.size;
 import static org.apache.spark.sql.functions.concat_ws;
-import org.apache.spark.api.java.function.*;
 import org.apache.spark.sql.Column;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.types.ArrayType;
@@ -27,8 +24,12 @@ import org.apache.spark.api.java.JavaPairRDD;
 import scala.Tuple2;
 import scala.collection.JavaConversions;
 import org.apache.spark.ml.linalg.SparseVector;
+import java.io.Serializable;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.*;
 
-public class TFIDFJobSkills {
+public class JobSkills {
   public static void main(String[] args) {
     SparkSession spark = SparkSession
         .builder()
@@ -36,7 +37,7 @@ public class TFIDFJobSkills {
         .getOrCreate();
 
     // Try reading in all the json files
-	String filePath = "hdfs://little-rock:46601/cs455/TP/data/openjobs-jobpostings.apr-2017.json";
+	String filePath = "hdfs://little-rock:46601/cs455/TP/data/*.json";
 	//String filePath = "hdfs://little-rock:46601/cs455/TP/data/*.json";
 	String[] jsonFiles = filePath.split(",");
 	SparkSession session = SparkSession.builder().getOrCreate();
@@ -85,17 +86,17 @@ public class TFIDFJobSkills {
        //Vector data = row.get(1).toArray;
        double[] idfValues = ((SparseVector)row.get(1)).toArray();
        for(int i = 0; i < word.size(); i++){
-           if(idfValues.length > i)
-            values.add(new Tuple2<>(word.get(i), idfValues[i]));
+            if(idfValues.length > i)
+                values.add(new Tuple2<>(word.get(i), idfValues[i]));
        }
        return values.iterator();
    });
-
-   JavaPairRDD<String, Double> removedDuplicates = features.mapToPair(
+    
+    JavaPairRDD<String, Double> removedDuplicates = features.mapToPair(
         new PairFunction<Tuple2<String, Double>, String, Double>(){
             @Override
             public Tuple2<String, Double> call(Tuple2<String, Double> tuple){
-                return new Tuple2<>(tuple._1().replace("(,.:", ""), tuple._2());
+                return new Tuple2<>(tuple._1().replaceAll(",.:", ""), tuple._2());
             }
         }
    );
@@ -111,9 +112,16 @@ public class TFIDFJobSkills {
    JavaPairRDD<String, Tuple2<Double, Double>> temp1 = removedDuplicates.mapValues(value -> new Tuple2<Double, Double>(value,new Double(1.0)));
    JavaPairRDD<String, Tuple2<Double, Double>> temp2 = temp1.reduceByKey((tuple1,tuple2) ->  new Tuple2<Double, Double>(tuple1._1 + tuple2._1, tuple1._2 + tuple2._2));
    JavaPairRDD<String, Double> aggregated = temp2.mapToPair(getAverageByKey);
-
-
-   features.saveAsTextFile("hdfs://santa-fe:48800/TP/output");
+    
+    JavaPairRDD<Double, String> lastRDD = 
+        aggregated.mapToPair(new PairFunction<Tuple2<String, Double>, Double, String>(){
+            @Override
+            public Tuple2<Double, String> call(Tuple2<String, Double> item) throws Exception {
+                return item.swap();
+            }
+        });
+    
+    lastRDD.sortByKey().saveAsTextFile("hdfs://little-rock:46601/cs455/TP/output");
 
     spark.stop();
   }
