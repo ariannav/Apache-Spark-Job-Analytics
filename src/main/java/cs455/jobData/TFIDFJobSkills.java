@@ -18,6 +18,7 @@ import org.apache.spark.sql.types.StructType;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.size;
 import static org.apache.spark.sql.functions.concat_ws;
+import org.apache.spark.api.java.function.*;
 import org.apache.spark.sql.Column;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.types.ArrayType;
@@ -83,15 +84,36 @@ public class TFIDFJobSkills {
        List<String> word = row.getList(0);
        //Vector data = row.get(1).toArray;
        double[] idfValues = ((SparseVector)row.get(1)).toArray();
-       System.out.println(idfValues);
-       System.out.flush();
        for(int i = 0; i < word.size(); i++){
-           values.add(new Tuple2<>(word.get(i), idfValues[i]));
+           if(idfValues.length > i)
+            values.add(new Tuple2<>(word.get(i), idfValues[i]));
        }
        return values.iterator();
    });
 
-  features.saveAsTextFile("hdfs://santa-fe:48800/TP/output");
+   JavaPairRDD<String, Double> removedDuplicates = features.mapToPair(
+        new PairFunction<Tuple2<String, Double>, String, Double>(){
+            @Override
+            public Tuple2<String, Double> call(Tuple2<String, Double> tuple){
+                return new Tuple2<>(tuple._1().replace("(,.:", ""), tuple._2());
+            }
+        }
+   );
+
+   PairFunction<Tuple2<String, Tuple2<Double,Double>>, String, Double> getAverageByKey = (tuple) -> {
+     Tuple2<Double, Double> val = tuple._2;
+     double total = val._1;
+     double count = val._2;
+     Tuple2<String, Double> averagePair = new Tuple2<String, Double>(tuple._1, total / count);
+     return averagePair;
+  };
+
+   JavaPairRDD<String, Tuple2<Double, Double>> temp1 = removedDuplicates.mapValues(value -> new Tuple2<Double, Double>(value,new Double(1.0)));
+   JavaPairRDD<String, Tuple2<Double, Double>> temp2 = temp1.reduceByKey((tuple1,tuple2) ->  new Tuple2<Double, Double>(tuple1._1 + tuple2._1, tuple1._2 + tuple2._2));
+   JavaPairRDD<String, Double> aggregated = temp2.mapToPair(getAverageByKey);
+
+
+   features.saveAsTextFile("hdfs://santa-fe:48800/TP/output");
 
     spark.stop();
   }
