@@ -1,4 +1,7 @@
-//Colton's Code :)
+//This code is not used in the final project. 
+//Author: Arianna Vacca and Colton Larson 
+//CS455 Term Project
+//Spring 2018
 
 import java.io.StringReader;
 import java.util.Arrays;
